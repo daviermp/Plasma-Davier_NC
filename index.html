@@ -1,36 +1,35 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>DAVIER NC</title></head>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DAVIER NC</title></head>
 <body style="margin:0;background:#0f172a;color:white;font-family:Arial;text-align:center">
-<h1 style="margin:10px">DAVIER NC PLASMA</h1>
-<button id="btn" style="padding:15px 30px;background:#16a34a;color:white;border:0;border-radius:8px;font-size:16px">CONECTAR GRBL</button>
-<p id="st">Desconectado</p>
-<canvas id="c" width="800" height="500" style="width:95%;background:#020617;border:2px solid #334155;border-radius:8px"></canvas>
-<div style="padding:10px">
-<button onclick="move('X-10')" style="padding:15px">X-</button>
-<button onclick="move('Y10')" style="padding:15px">Y+</button>
-<button onclick="move('Y-10')" style="padding:15px">Y-</button>
-<button onclick="move('X10')" style="padding:15px">X+</button>
+<h2 style="margin:10px 0 5px">DAVIER NC PLASMA</h2>
+<button id="btn" style="padding:12px 25px;background:#16a34a;color:white;border:0;border-radius:8px;font-weight:bold">CONECTAR GRBL</button>
+<p id="st" style="margin:5px;color:#94a3b8">Desconectado - Usa Chrome en PC</p>
+<div style="display:flex;justify-content:center;gap:10px;padding:10px;flex-wrap:wrap">
+<div><canvas id="c" width="900" height="550" style="width:92vw;max-width:900px;background:#020617;border:2px solid #334155;border-radius:10px"></canvas>
+<p style="font-size:12px;color:gray">GRIS = Mesa / ROJO = Recorrido / VERDE = Posicion actual</p></div>
 </div>
-<input type="file" id="f" accept=".gcode,.nc,.tap">
+<div style="padding:10px">
+<button onclick="jog('X-10')" style="padding:15px 20px;margin:3px">X-</button>
+<button onclick="jog('Y10')" style="padding:15px 20px;margin:3px">Y+</button>
+<button onclick="jog('Y-10')" style="padding:15px 20px;margin:3px">Y-</button>
+<button onclick="jog('X10')" style="padding:15px 20px;margin:3px">X+</button>
+<button onclick="sendCmd('G92 X0 Y0')" style="padding:15px 20px;margin:3px;background:#334155;color:white;border:0;border-radius:5px">CERO</button>
+</div>
+<div style="padding:10px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+<input type="file" id="f" accept=".gcode,.nc,.tap" style="color:white">
+<button onclick="iniciar()" style="padding:12px 20px;background:#2563eb;color:white;border:0;border-radius:8px">INICIAR CORTE</button>
+<button onclick="parar()" style="padding:12px 20px;background:#dc2626;color:white;border:0;border-radius:8px">STOP</button>
+</div>
+<pre id="log" style="text-align:left;background:black;color:#22c55e;height:100px;overflow:auto;margin:10px;padding:10px;font-size:11px"></pre>
 <script>
-let port,writer;
-document.getElementById('btn').onclick=async()=>{
-port=await navigator.serial.requestPort();await port.open({baudRate:115200});
-writer=port.writable.getWriter();document.getElementById('st').innerText='CONECTADO OK';
-}
-async function move(a){if(!writer)return alert('Conecta primero');await writer.write(new TextEncoder().encode('$J=G91 '+a+' F1000\n'));}
-
-let cv=document.getElementById('c'),ctx=cv.getContext('2d');
-ctx.strokeStyle='gray';ctx.strokeRect(100,100,600,300);
-ctx.strokeStyle='red';ctx.beginPath();ctx.moveTo(100,100);ctx.lineTo(700,100);ctx.stroke();
-
-document.getElementById('f').onchange=e=>{
-let r=new FileReader();r.onload=()=>{
-let lines=r.result.split('\n');ctx.clearRect(0,0,800,500);
-ctx.strokeStyle='#ffffff22';ctx.strokeRect(100,100,600,300);
-ctx.beginPath();ctx.strokeStyle='red';let x=100,y=100;ctx.moveTo(x,y);
-lines.forEach(l=>{if(l.includes('X'))x=100+parseFloat(l.split('X')[1])*2;if(l.includes('Y'))y=100+parseFloat(l.split('Y')[1])*2;ctx.lineTo(x,y);});ctx.stroke();
-};r.readAsText(e.target.files[0]);
-}
+let port,writer,reader,gcode=[];let cv=document.getElementById('c'),ctx=cv.getContext('2d');
+function log(t){document.getElementById('log').innerText+=t+"\n";document.getElementById('log').scrollTop=9999}
+function draw(){ctx.clearRect(0,0,900,550);ctx.strokeStyle='#1e293b';ctx.lineWidth=1;ctx.strokeRect(50,50,800,400);ctx.strokeStyle='red';ctx.lineWidth=2;ctx.beginPath();let x=50,y=50;ctx.moveTo(x,y);gcode.forEach(l=>{let m=l.match(/X([-\d.]+)/),n=l.match(/Y([-\d.]+)/);if(m)x=50+parseFloat(m[1])*2;if(n)y=50+parseFloat(n[1])*2;if(l.includes('G1')||l.includes('G2')||l.includes('G3'))ctx.lineTo(x,y);else ctx.moveTo(x,y);});ctx.stroke();ctx.fillStyle='#22c55e';ctx.fillRect(x-5,y-5,10,10);}
+document.getElementById('btn').onclick=async()=>{try{port=await navigator.serial.requestPort();await port.open({baudRate:115200});writer=port.writable.getWriter();document.getElementById('st').innerText='CONECTADO OK';log('Conectado');}catch(e){alert(e)}}
+async function sendCmd(c){if(!writer)return alert('Conecta primero');log('> '+c);await writer.write(new TextEncoder().encode(c+'\n'))}
+function jog(a){sendCmd('$J=G91 '+a+' F2000')}
+function parar(){sendCmd('!');gcode=[]}
+async function iniciar(){for(let l of gcode){await sendCmd(l);await new Promise(r=>setTimeout(r,200))}}
+document.getElementById('f').onchange=e=>{let r=new FileReader();r.onload=()=>{gcode=r.result.split('\n');log('Archivo cargado '+gcode.length+' lineas');draw();};r.readAsText(e.target.files[0])};draw();
 </script>
 </body></html>
