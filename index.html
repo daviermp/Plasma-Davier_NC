@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>DAVIER NC</title></head>
+<body style="background:#0f172a;color:white;text-align:center;padding:20px;font-family:Arial">
+<h1>DAVIER NC PLASMA</h1>
+<h3 style="color:#22c55e">CONECTADO</h3>
+<button style="padding:20px;background:blue;color:white;border:0;border-radius:10px;width:95%">CONECTAR MAQUINA</button>
+<br><br>
+<canvas id="c" width="300" height="300" style="background:#020617;border:2px solid gray"></canvas>
+<p>Gris = Boceto / Rojo = Corte</p>
+<script>
+var ctx=document.getElementById('c').getContext('2d');
+ctx.strokeStyle='gray';ctx.strokeRect(50,50,200,200);
+ctx.fillStyle='red';ctx.fillRect(50,50,200,8);
+</script>
+</body>
+</html>
