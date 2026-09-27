@@ -1,1 +1,15 @@
+import tkinter as tk
+from tkinter import ttk
+import serial, serial.tools.list_ports
+import threading, time, datetime
 
+class DAVIER_NC:
+  def __init__(self, root):
+    self.root = root
+    root.title("DAVIER NC PLASMA V2.0")
+    root.geometry("1000x700")
+    self.ser = None
+    self.running = False
+    self.nb = ttk.Notebook(root)
+    self.nb.pack(fill="both", expand=True)
+    self.create_tabs()
