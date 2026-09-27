@@ -1,17 +1,36 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>DAVIER NC</title></head>
-<body style="background:#0f172a;color:white;text-align:center;padding:20px;font-family:Arial">
-<h1>DAVIER NC PLASMA</h1>
-<h3 style="color:#22c55e">CONECTADO</h3>
-<button style="padding:20px;background:blue;color:white;border:0;border-radius:10px;width:95%">CONECTAR MAQUINA</button>
-<br><br>
-<canvas id="c" width="300" height="300" style="background:#020617;border:2px solid gray"></canvas>
-<p>Gris = Boceto / Rojo = Corte</p>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>DAVIER NC</title></head>
+<body style="margin:0;background:#0f172a;color:white;font-family:Arial;text-align:center">
+<h1 style="margin:10px">DAVIER NC PLASMA</h1>
+<button id="btn" style="padding:15px 30px;background:#16a34a;color:white;border:0;border-radius:8px;font-size:16px">CONECTAR GRBL</button>
+<p id="st">Desconectado</p>
+<canvas id="c" width="800" height="500" style="width:95%;background:#020617;border:2px solid #334155;border-radius:8px"></canvas>
+<div style="padding:10px">
+<button onclick="move('X-10')" style="padding:15px">X-</button>
+<button onclick="move('Y10')" style="padding:15px">Y+</button>
+<button onclick="move('Y-10')" style="padding:15px">Y-</button>
+<button onclick="move('X10')" style="padding:15px">X+</button>
+</div>
+<input type="file" id="f" accept=".gcode,.nc,.tap">
 <script>
-var ctx=document.getElementById('c').getContext('2d');
-ctx.strokeStyle='gray';ctx.strokeRect(50,50,200,200);
-ctx.fillStyle='red';ctx.fillRect(50,50,200,8);
+let port,writer;
+document.getElementById('btn').onclick=async()=>{
+port=await navigator.serial.requestPort();await port.open({baudRate:115200});
+writer=port.writable.getWriter();document.getElementById('st').innerText='CONECTADO OK';
+}
+async function move(a){if(!writer)return alert('Conecta primero');await writer.write(new TextEncoder().encode('$J=G91 '+a+' F1000\n'));}
+
+let cv=document.getElementById('c'),ctx=cv.getContext('2d');
+ctx.strokeStyle='gray';ctx.strokeRect(100,100,600,300);
+ctx.strokeStyle='red';ctx.beginPath();ctx.moveTo(100,100);ctx.lineTo(700,100);ctx.stroke();
+
+document.getElementById('f').onchange=e=>{
+let r=new FileReader();r.onload=()=>{
+let lines=r.result.split('\n');ctx.clearRect(0,0,800,500);
+ctx.strokeStyle='#ffffff22';ctx.strokeRect(100,100,600,300);
+ctx.beginPath();ctx.strokeStyle='red';let x=100,y=100;ctx.moveTo(x,y);
+lines.forEach(l=>{if(l.includes('X'))x=100+parseFloat(l.split('X')[1])*2;if(l.includes('Y'))y=100+parseFloat(l.split('Y')[1])*2;ctx.lineTo(x,y);});ctx.stroke();
+};r.readAsText(e.target.files[0]);
+}
 </script>
-</body>
-</html>
+</body></html>
