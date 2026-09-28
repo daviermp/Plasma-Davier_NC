@@ -1,0 +1,31 @@
+name: Build DAVIER NC PLASMA V3.1 EXE
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyserial pyinstaller
+      
+      - name: Build EXE
+        run: |
+          pyinstaller --noconfirm --onefile --windowed --name "DAVIER_NC_PLASMA_V3.1" main.py
+      
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: DAVIER_NC_PLASMA_V3.1-Windows
+          path: dist/DAVIER_NC_PLASMA_V3.1.exe
